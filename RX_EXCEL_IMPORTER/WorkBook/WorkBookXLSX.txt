@@ -1,0 +1,15 @@
+import RX_EXCEL_IMPORTER:WorkBook:WorkBook;
+
+class WorkBookXLSX extends RX_EXCEL_IMPORTER:WorkBook:WorkBook;
+   method WorkBookXLSX();
+   method getWorkBook();
+end-class;
+
+method WorkBookXLSX
+   %Super = create RX_EXCEL_IMPORTER:WorkBook:WorkBook();
+end-method;
+
+method getWorkBook
+   %Super.JScriptEngine.eval("var my_xls_workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook(input_document);");
+end-method;
+

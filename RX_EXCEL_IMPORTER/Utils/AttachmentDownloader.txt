@@ -1,0 +1,34 @@
+class AttachmentDownloader
+   property string source;
+   property string fileName;
+   property string destination;
+   method AttachmentDownloader();
+   method getFileFromAttachment() Returns string;
+private
+   method errorMessage();
+end-class;
+
+method AttachmentDownloader
+   %This.destination = GetURL(URL.RX_IF_PS_INT) | "TSNSW/process"; /* default */
+end-method;
+
+method getFileFromAttachment
+   /+ Returns String +/
+   try
+      CreateDirectory(%This.destination, %FilePath_Absolute);
+      Local integer &returnCode = GetAttachment(%This.source, %This.fileName, %This.destination | "/" | %This.fileName);
+      Return %This.destination | "/" | %This.fileName;
+   catch Exception &ex;
+      %This.errorMessage();
+   end-try;
+end-method;
+
+method errorMessage
+   Local string &msg;
+   &msg = &msg | "Error in " | %This | ".getAttachment(). ";
+   &msg = &msg | ".source = '" | %This.source | "', ";
+   &msg = &msg | ".filename = '" | %This.fileName | "', ";
+   &msg = &msg | ".destination = '" | %This.destination | "/" | %This.fileName | "'.";
+   Error &msg;
+end-method;
+

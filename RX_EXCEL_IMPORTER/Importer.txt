@@ -1,0 +1,150 @@
+import RX_EXCEL_IMPORTER:ImporterInterface;
+import RX_EXCEL_IMPORTER:WorkBook:*;
+import RX_EXCEL_IMPORTER:Utils:*;
+
+class Importer implements RX_EXCEL_IMPORTER:ImporterInterface
+   property RX_EXCEL_IMPORTER:Utils:AttachmentDownloader AttachmentDownloader;
+   property string targetRecordName;
+   method Importer();
+   method importFile();
+   method addCellToFieldMapping(&cell As integer, &field As string);
+protected
+   property RX_EXCEL_IMPORTER:WorkBook:WorkBook WorkBook;
+   property array of array CellToFieldMap;
+   method preImport();
+   method preProcess();
+   method preCopyWorkBookRow(&WorkBookRow As array of string, &isValid As boolean out);
+   method preInsert(&TargetRecord As Record);
+   method postProcess();
+private
+   instance RX_EXCEL_IMPORTER:Utils:Formatter &Formatter;
+   method createDependencies();
+   method getWorkBook();
+   method process();
+   method insert(&WorkBookRow As array of string);
+   method copyWorkBookRowToRecord(&WorkBookRow As array of string, &TargetRecord As Record);
+   method getMappedFieldName(&cellNum As integer) Returns string;
+end-class;
+
+method Importer
+   %This.createDependencies();
+end-method;
+
+method importFile
+   /+ Extends/implements RX_EXCEL_IMPORTER:ImporterInterface.importFile +/
+   %This.preImport();
+   %This.getWorkBook();
+   %This.preProcess();
+   %This.process();
+   %This.postProcess();
+end-method;
+
+
+method createDependencies
+   &AttachmentDownloader = create RX_EXCEL_IMPORTER:Utils:AttachmentDownloader();
+   &Formatter = create RX_EXCEL_IMPORTER:Utils:Formatter();
+end-method;
+
+method preImport /* protected */
+   /+ Extends/implements RX_EXCEL_IMPORTER:ImporterInterface.preImport +/
+end-method;
+
+method getWorkBook
+   Local string &downloadedAttachment;
+   &downloadedAttachment = &AttachmentDownloader.getFileFromAttachment();
+   Evaluate Lower(Right(&downloadedAttachment, 4))
+   When = ".xls"
+      %This.WorkBook = create RX_EXCEL_IMPORTER:WorkBook:WorkBookXLS();
+   When = "xlsx"
+      %This.WorkBook = create RX_EXCEL_IMPORTER:WorkBook:WorkBookXLSX();
+   End-Evaluate;
+   %This.WorkBook.open(&downloadedAttachment);
+end-method;
+
+method preProcess /* protected */
+   /+ Extends/implements RX_EXCEL_IMPORTER:ImporterInterface.preProcess +/
+end-method;
+
+method process
+   Local integer &row, &cell;
+   Local array of string &WorkBookRow = CreateArrayRept("", 0);
+   %This.WorkBook.initRowIterator();
+   %This.WorkBook.nextRow(); /* skip header */
+   For &row = 2 To %This.WorkBook.numRows
+      &WorkBookRow = CreateArrayRept("", 0);
+      %This.WorkBook.nextRow();
+      %This.WorkBook.initCellIterator();
+      For &cell = 1 To %This.WorkBook.numCells
+         %This.WorkBook.nextCell();
+         &WorkBookRow.Push(%This.WorkBook.getCellValue());
+      End-For;
+      %This.insert(&WorkBookRow);
+   End-For;
+end-method;
+
+method insert
+   /+ &WorkBookRow as Array of String +/
+   Local Record &TargetRecord;
+   Local boolean &isValid = True;
+   &TargetRecord = CreateRecord(@("Record." | %This.targetRecordName));
+   %This.preCopyWorkBookRow(&WorkBookRow, &isValid);
+   If &isValid Then
+      %This.copyWorkBookRowToRecord(&WorkBookRow, &TargetRecord);
+      %This.preInsert(&TargetRecord);
+      &TargetRecord.Insert();
+   End-If;
+end-method;
+
+method preCopyWorkBookRow /* protected */
+   /+ &WorkBookRow as Array of String, +/
+   /+ &isValid as Boolean out +/
+   /+ Extends/implements RX_EXCEL_IMPORTER:ImporterInterface.preCopyWorkBookRow +/
+end-method;
+
+method copyWorkBookRowToRecord
+   /+ &WorkBookRow as Array of String, +/
+   /+ &TargetRecord as Record +/
+   Local string &mappedFieldName, &newVal;
+   Local Field &MappedField;
+   Local integer &cellNum;
+   For &cellNum = 1 To &WorkBookRow.Len
+      &mappedFieldName = %This.getMappedFieldName(&cellNum);
+      If &mappedFieldName <> "" Then
+         &MappedField = &TargetRecord.GetField(@("Field." | &mappedFieldName));
+         &newVal = &WorkBookRow [&cellNum];
+         &MappedField.Value = &Formatter.format(&newVal, &MappedField.Type);
+      End-If;
+   End-For;
+end-method;
+
+method getMappedFieldName
+   /+ &cellNum as Integer +/
+   /+ Returns String +/
+   Local integer &mapIndex = %This.CellToFieldMap.Find(&cellNum);
+   If &mapIndex = 0 Then
+      Return "";
+   End-If;
+   Return %This.CellToFieldMap [&mapIndex][2];
+end-method;
+
+method preInsert /* protected */
+   /+ &TargetRecord as Record +/
+   /+ Extends/implements RX_EXCEL_IMPORTER:ImporterInterface.preInsert +/
+end-method;
+
+method postProcess /* protected */
+   /+ Extends/implements RX_EXCEL_IMPORTER:ImporterInterface.postProcess +/
+end-method;
+
+method addCellToFieldMapping /* protected */
+   /+ &cell as Integer, +/
+   /+ &field as String +/
+   /+ Extends/implements RX_EXCEL_IMPORTER:ImporterInterface.addCellToFieldMapping +/
+   Local array &CellToField = CreateArray();
+   &CellToField.Push(&cell, &field);
+   If %This.CellToFieldMap = Null Then
+      %This.CellToFieldMap = CreateArray(&CellToField);
+   Else
+      %This.CellToFieldMap.Push(&CellToField);
+   End-If;
+end-method;

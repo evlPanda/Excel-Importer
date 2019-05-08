@@ -1,0 +1,83 @@
+/**
+   	This example imports into Record.RX_IMPREJ_TAO from a known import file layout.
+	.doCellToFieldMapping() maps excel cells to Record.Fields.
+
+	Example use of this example class:
+
+	&ExampleImporter = create RX_EXCEL_IMPORTER:Example();
+	&ExampleImporter.attachedFileName = "SomeFile.xlsx";
+	&ExampleImporter.processInstance = 123;
+	&ExampleImporter.importFile();
+
+*/
+
+import RX_EXCEL_IMPORTER:Importer;
+
+class Example extends RX_EXCEL_IMPORTER:Importer
+   property string attachedFileName;
+   property number processInstance;
+   method Example();
+protected
+   method preImport();
+   method preProcess();
+   method preCopyWorkBookRow(&WorkBookRow As array of string, &isValid As boolean out);
+   method preInsert(&TargetRecord As Record);
+   method postProcess();
+private
+   method doCellToFieldMapping();
+end-class;
+
+
+method Example
+   %Super = create RX_EXCEL_IMPORTER:Importer();
+end-method;
+
+method preImport
+   /+ Extends/implements RX_EXCEL_IMPORTER:ImporterInterface.preImport +/
+   %Super.AttachmentDownloader.source = GetURL(URL.RX_IMPORT_CID);
+   %Super.AttachmentDownloader.fileName = %This.attachedFileName;
+   %Super.AttachmentDownloader.destination = GetURL(URL.RX_IF_PS_INT) | "TSNSW/process";
+   %Super.targetRecordName = "RX_IMPREJ_TAO";
+   %This.doCellToFieldMapping();
+end-method;
+
+method preProcess
+   /+ Extends/implements RX_EXCEL_IMPORTER:ImporterInterface.preProcess +/
+   Local string &msg = "Started processing of excel file.";
+end-method;
+
+method preCopyWorkBookRow
+   /+ &WorkBookRow as Array of String, +/
+   /+ &isValid as Boolean out +/
+   /+ Extends/implements RX_EXCEL_IMPORTER:ImporterInterface.preCopyWorkBookRow +/
+   &isValid = (&WorkBookRow.Len = 12); /* no blank cells. */
+end-method;
+
+method preInsert
+   /+ &TargetRecord as Record +/
+   /+ Extends/implements RX_EXCEL_IMPORTER:ImporterInterface.preInsert +/
+   &TargetRecord.PROCESS_INSTANCE.Value = %This.processInstance;
+end-method;
+
+method postProcess
+   /+ Extends/implements RX_EXCEL_IMPORTER:ImporterInterface.postProcess +/
+   Local string &msg = "Finished processing of excel file.";
+end-method;
+
+
+/* private */
+
+method doCellToFieldMapping
+   %Super.addCellToFieldMapping(1, "PROVIDER_ID");
+   %Super.addCellToFieldMapping(2, "GPNL_FILE_NAME");
+   %Super.addCellToFieldMapping(4, "FIRST_NAME");
+   %Super.addCellToFieldMapping(5, "LAST_NAME");
+   %Super.addCellToFieldMapping(6, "MIDDLE_NAME");
+   %Super.addCellToFieldMapping(7, "BIRTHDATE");
+   %Super.addCellToFieldMapping(8, "SEX");
+   %Super.addCellToFieldMapping(9, "RX_SAS_PROG");
+   %Super.addCellToFieldMapping(10, "RX_NATIONAL_CODE");
+   %Super.addCellToFieldMapping(11, "RX_PAS_NBR");
+   %Super.addCellToFieldMapping(12, "DESCR254");
+end-method;
+

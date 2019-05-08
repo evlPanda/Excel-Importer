@@ -1,0 +1,72 @@
+import RX_UNIT_TEST:Base;
+import RX_EXCEL_IMPORTER:UnitTests:Importer_Mock;
+
+class Importer_Test extends RX_UNIT_TEST:Base
+   method Importer_Test();
+   method Setup();
+   method Run();
+   method Teardown();
+private
+   instance RX_EXCEL_IMPORTER:UnitTests:Importer_Mock &Importer;
+   method loadTestData(&fileName As string);
+   method Test_loadRejectData();
+   method Test_populateTable();
+   method Test_handleBlankCell();
+end-class;
+
+method Importer_Test
+   %Super = create RX_UNIT_TEST:Base("" | %This);
+end-method;
+
+method Setup
+   /+ Extends/implements TTS_UNITTEST:TestBase.Setup +/
+   SQLExec("delete from ps_rx_imprej_tao where process_instance = 123");
+end-method;
+
+
+method Run
+   /+ Extends/implements TTS_UNITTEST:TestBase.Run +/
+   %This.Test_loadRejectData();
+   %This.Test_populateTable();
+   %This.Test_handleBlankCell();
+end-method;
+
+method loadTestData
+   /+ &fileName as String +/
+   &Importer = create RX_EXCEL_IMPORTER:UnitTests:Importer_Mock();
+   &Importer.fileName = &fileName;
+   &Importer.importFile();
+end-method;
+
+method Test_loadRejectData
+   %This.loadTestData("MNITSCHKE_4_11_2019_14_8_8rejected_filexlsx.xlsx");
+   %This.Description = "Testing loadRejectData, Import.loadData() & Import.numRows";
+   %This.ExpectedResult = 3;
+   %This.Result = &Importer.WorkBook.numRows;
+   %This.Test();
+end-method;
+
+method Test_populateTable
+   %This.loadTestData("MNITSCHKE_4_11_2019_14_8_8rejected_filexlsx.xlsx");
+   Local integer &rowsFound;
+   SQLExec("select count(*) from ps_rx_imprej_tao where process_instance = 123 and ((first_name = 'James' and last_name = 'Mitchell') or (first_name = 'William' and last_name = 'Dunn'))", &rowsFound);
+   %This.Description = "Testing populateTable, Import.loadData() & data loaded into ps_rx_imprej_tao";
+   %This.ExpectedResult = 2;
+   %This.Result = &rowsFound;
+   %This.Test();
+end-method;
+
+method Test_handleBlankCell
+   %This.loadTestData("MNITSCHKE_4_23_2019_12_25_30rejected_filexlsx_errors.xlsx");
+   Local integer &rowsFound;
+   SQLExec("select count(*) from ps_rx_imprej_tao where process_instance = 123 and ((first_name = 'James' and last_name = 'Mitchell') or (first_name = 'William' and last_name = 'Dunn'))", &rowsFound);
+   %This.Description = "Testing handleBlankCell, Import.loadData() & data loaded into ps_rx_imprej_tao";
+   %This.ExpectedResult = 2;
+   %This.Result = &rowsFound;
+   %This.Test();
+end-method;
+
+method Teardown
+   /+ Extends/implements TTS_UNITTEST:TestBase.Teardown +/
+   SQLExec("delete from ps_rx_imprej_tao where process_instance = 123");
+end-method;

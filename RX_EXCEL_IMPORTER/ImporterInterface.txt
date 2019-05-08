@@ -1,0 +1,15 @@
+import RX_EXCEL_IMPORTER:Utils:AttachmentDownloader;
+
+interface ImporterInterface
+   property RX_EXCEL_IMPORTER:Utils:AttachmentDownloader AttachmentDownloader;
+   property string targetRecordName;
+   method importFile();
+   method addCellToFieldMapping(&cell As integer, &field As string);
+protected
+   method preImport();
+   method preProcess();
+   method preCopyWorkBookRow(&WorkBookRow As array of string, &isValid As boolean out);
+   method preInsert(&TargetRecord As Record);
+   method postProcess();
+end-interface;
+

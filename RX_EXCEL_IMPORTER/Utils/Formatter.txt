@@ -1,0 +1,26 @@
+class Formatter
+   method format(&val As string, &type As string) Returns any;
+end-class;
+
+method format
+   /+ &val as String, +/
+   /+ &type as String +/
+   /+ Returns Any +/
+   Evaluate &type
+   When "CHAR"
+      Return &val;
+   When "DATE"
+      SQLExec("select to_char(to_date('19000101', 'YYYYMMDD') + :1 - 2, 'YYYYMMDD') from dual", &val, &val); /* Stored as days from 01/01/1900 + 1 (Lotus 1-2-3 bug) */
+   When "DATETIME"
+      Error %This | ".format needs to be updated to handle DATETIME formatting.";
+   When "LONGCHAR"
+      Error %This | ".format needs to be updated to handle LONGCHAR formatting.";
+   When "NUMBER"
+   When "SIGNEDNUMBER"
+      Return Value(&val);
+   When "TIME"
+      Error %This | ".format needs to be updated to handle TIME formatting.";
+   End-Evaluate;
+   Return &val;
+end-method;
+

@@ -1,0 +1,100 @@
+class WorkBook
+   property integer numRows get;
+   property integer numCells get;
+   method open(&excelFilePath As string);
+   method initRowIterator();
+   method initCellIterator();
+   method nextRow();
+   method nextCell();
+   method getCellValue() Returns string;
+   method gotoHeaderRow();
+protected
+   property JavaObject JScriptEngine;
+   method getWorkBook();
+private
+   method getJScriptEngine();
+   method getDocument(&excelFilePath As string);
+   method getWorkSheet();
+end-class;
+
+get numRows
+   /+ Returns Integer +/
+   &JScriptEngine.eval("var NumberOfRows = my_worksheet.getPhysicalNumberOfRows();");
+   Return Value(&JScriptEngine.get("NumberOfRows").toString());
+end-get;
+
+get numCells
+   /+ Returns Integer +/
+   &JScriptEngine.eval("var NumberOfCells = row.getPhysicalNumberOfCells();");
+   Return Value(&JScriptEngine.get("NumberOfCells").toString());
+end-get;
+
+method open
+   /+ &excelFilePath as String +/
+   %This.getJScriptEngine();
+   %This.getDocument(&excelFilePath);
+   %This.getWorkBook();
+   %This.getWorkSheet();
+end-method;
+
+method initRowIterator
+   &JScriptEngine.eval("var rowIterator = my_worksheet.iterator();");
+end-method;
+
+method initCellIterator
+   &JScriptEngine.eval("var cellIterator = row.cellIterator();");
+end-method;
+
+method nextRow
+   &JScriptEngine.eval("var row = rowIterator.next();");
+end-method;
+
+method nextCell
+   &JScriptEngine.eval("var cell = cellIterator.next();");
+end-method;
+
+method getCellValue
+   /+ Returns String +/
+   &JScriptEngine.eval("var cellType = cell.getCellType()");
+   Evaluate &JScriptEngine.get("cellType").toString()
+   When 0
+      &JScriptEngine.eval("var cellValue = cell.getNumericCellValue().intValue()");
+   When 1
+      &JScriptEngine.eval("var cellValue = cell.getStringCellValue()");
+   End-Evaluate;
+   If &JScriptEngine.get("cellValue").toString() = "" Then
+      Return " ";
+   End-If;
+   Return &JScriptEngine.get("cellValue").toString();
+end-method;
+
+method gotoHeaderRow
+   %This.initRowIterator();
+   %This.nextRow();
+end-method;
+
+
+/* protected/private */
+
+method getJScriptEngine
+   Local JavaObject &JScriptManager = CreateJavaObject("javax.script.ScriptEngineManager");
+   &JScriptEngine = &JScriptManager.getEngineByName("JavaScript");
+end-method;
+
+method getDocument
+   /+ &excelFilePath as String +/
+   try
+      &JScriptEngine.eval("var input_document = new java.io.FileInputStream(""" | &excelFilePath | """);");
+   catch Exception &ex
+      Error "Could not open workbook: " | &excelFilePath;
+   end-try;
+end-method;
+
+method getWorkBook
+   Error %This | ".getWorkBook not overriden by subclass.";
+end-method;
+
+method getWorkSheet
+   &JScriptEngine.eval("var my_worksheet = my_xls_workbook.getSheetAt(0);");
+end-method;
+

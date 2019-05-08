@@ -1,0 +1,57 @@
+import RX_EXCEL_IMPORTER:Importer;
+import RX_EXCEL_IMPORTER:WorkBook:WorkBook;
+
+class Importer_Mock extends RX_EXCEL_IMPORTER:Importer
+   property RX_EXCEL_IMPORTER:WorkBook:WorkBook WorkBook;
+   property string fileName;
+   method Importer_Mock();
+protected
+   method preImport();
+   method preCopyWorkBookRow(&WorkBookRow As array of string, &isValid As boolean out);
+   method preInsert(&TargetRecord As Record);
+private
+   method mapCellsToFields();
+end-class;
+
+method Importer_Mock /* RECORD.RX_IMPREJ_TAO to Reject file. */
+   %Super = create RX_EXCEL_IMPORTER:Importer();
+end-method;
+
+method preImport
+   /+ Extends/implements RX_EXCEL_IMPORTER:ImporterInterface.preImport +/
+   %Super.AttachmentDownloader.source = GetURL(URL.RX_IMPORT_CID);
+   %Super.AttachmentDownloader.fileName = %This.fileName;
+   %Super.AttachmentDownloader.destination = GetURL(URL.RX_IF_PS_INT) | "TSNSW/process";
+   %Super.targetRecordName = "RX_IMPREJ_TAO";
+   %This.mapCellsToFields();
+end-method;
+
+method mapCellsToFields
+   %Super.addCellToFieldMapping(1, "PROVIDER_ID");
+   %Super.addCellToFieldMapping(2, "GPNL_FILE_NAME");
+   %Super.addCellToFieldMapping(4, "FIRST_NAME");
+   %Super.addCellToFieldMapping(5, "LAST_NAME");
+   %Super.addCellToFieldMapping(6, "MIDDLE_NAME");
+   %Super.addCellToFieldMapping(7, "BIRTHDATE");
+   %Super.addCellToFieldMapping(8, "SEX");
+   %Super.addCellToFieldMapping(9, "RX_SAS_PROG");
+   %Super.addCellToFieldMapping(10, "RX_NATIONAL_CODE");
+   %Super.addCellToFieldMapping(11, "RX_PAS_NBR");
+   %Super.addCellToFieldMapping(12, "DESCR254");
+end-method;
+
+method preCopyWorkBookRow
+   /+ &WorkBookRow as Array of String, +/
+   /+ &isValid as Boolean out +/
+   /+ Extends/implements RX_EXCEL_IMPORTER:ImporterInterface.preCopyWorkBookRow +/
+   If &WorkBookRow.Len < 12 Then
+      &isValid = False;
+   End-If;
+end-method;
+
+method preInsert
+   /+ &TargetRecord as Record +/
+   /+ Extends/implements RX_EXCEL_IMPORTER:ImporterInterface.preInsert +/
+   &TargetRecord.PROCESS_INSTANCE.Value = 123;
+end-method;
+

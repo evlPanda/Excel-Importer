@@ -1,0 +1,32 @@
+import RX_UNIT_TEST:Base;
+import RX_EXCEL_IMPORTER:Utils:AttachmentDownloader;
+
+class AttachmentDownloader_Test extends RX_UNIT_TEST:Base
+   method AttachmentDownloader_Test();
+   method Run();
+private
+   instance string &testFileName;
+   method Test_getFileFromAttachment();
+end-class;
+
+method AttachmentDownloader_Test
+   %Super = create RX_UNIT_TEST:Base("" | %This);
+   &testFileName = "MNITSCHKE_4_11_2019_15_33_35rejected_filexlsx.xlsx";
+end-method;
+
+method Run
+   /+ Extends/implements TTS_UNITTEST:TestBase.Run +/
+   %This.Test_getFileFromAttachment();
+end-method;
+
+method Test_getFileFromAttachment
+   Local RX_EXCEL_IMPORTER:Utils:AttachmentDownloader &AttachmentDownloader = create RX_EXCEL_IMPORTER:Utils:AttachmentDownloader();
+   &AttachmentDownloader.source = GetURL(URL.RX_IMPORT_CID);
+   &AttachmentDownloader.fileName = &testFileName;
+   &AttachmentDownloader.destination = GetURL(URL.RX_IF_PS_INT) | "TSNSW/process";
+   %This.Description = "Testing AttachmentDownloader.getFileFromAttachment()";
+   %This.ExpectedResult = "/psfileshare/interfaces/ps/dev/TSNSW/process/" | &testFileName;
+   %This.Result = &AttachmentDownloader.getFileFromAttachment();
+   %This.Test();
+end-method;
+
